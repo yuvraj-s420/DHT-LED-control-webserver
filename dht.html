@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>DHT Sensor Data</title>
+</head>
+<body>
+    <h1>Humidity and Temperature data</h1>
+    <p>Here is the Humidity data: <span id='humidity'>-</span>%</p>
+    <p>Here is the Temperature data: <span id='temperature'>-</span>°C</p>
+    <button type='button' id='LED_ON'>Turn LED on</button>
+    <button type='button' id='LED_OFF'>Turn LED off</button>
+
+    <script>
+        // Create a new WebSocket for real time data and changes
+        var Socket;
+
+        // Add event listeners to the buttons, and call the functions to send the on/off signal to the ESP32
+        document.getElementById('LED_ON').addEventListener('click', send_signal_on);
+        document.getElementById('LED_OFF').addEventListener('click', send_signal_off);
+
+        // Function to send the on/off signal to the ESP32
+        function send_signal_on() {
+            Socket.send('LED_ON');
+            console.log('LED ON');
+        }
+        function send_signal_off() {
+            Socket.send('LED_OFF');
+            console.log('LED OFF');
+        }
+
+        // Function to initialize the WebSocket
+        function init() {
+            Socket = new WebSocket('ws://' + window.location.hostname + ':81/');    // Connect to the WebSocket server
+            
+            // Console feedback for debugging
+            Socket.onopen = function() {
+                console.log('WebSocket Connected!');
+            };
+
+            Socket.onerror = function(error) {
+                console.log('WebSocket Error:', error);
+            };
+            
+            Socket.onmessage = function(event) {
+                console.log('Received Data:', event.data);
+                processCommand(event);
+            };
+        }
+        // Function to process the command received from the WebSocket (in this case, changing the inner html of the span elements to the temp and humidity data received)
+        function processCommand(event) {
+            // Parse the JSON object from the event and update the values on the HTML page
+            var jsonobj = JSON.parse(event.data);
+            document.getElementById('humidity').innerHTML = jsonobj.humidity;
+            document.getElementById('temperature').innerHTML = jsonobj.temperature;
+            console.log(jsonobj.humidity);    // Log the data to the console for debugging
+            console.log(jsonobj.temperature);
+        }   
+        // Call the init function when the page is loaded to start websocket
+        window.onload = function(event) {
+            init();
+        }
+    </script>
+</body>
+</html>
